@@ -1,6 +1,6 @@
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.7.0
-#+PROPERTY: header-args  :results none
-#+PROPERTY: header-args:R :session *R*  :eval no-export :results none
+#+PROPERTY: header-args 
+#+PROPERTY: header-args:R :session *R*  :eval no-export 
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+AUTHOR: Richie Morrisroe
@@ -17,6 +17,8 @@
 there
 #+CAPTION: What do you see?
 #+NAME: fig:old_young
+#+attr_latex: :width 100px :height 100px
+#+attr_html: :width 100px :height 100px
 [[./old_young.png]]
 * The importance of perspective
 - You can see one of two things in the previous image
@@ -25,6 +27,8 @@ there
 * Muller-Lyer Illusion
 #+CAPTION: Which line is longer?
 #+NAME: muller_lyer
+#+attr_latex: :width 100px :height 100px
+#+attr_html: :width 100px :height 100px
 [[./muller_lyer.png]]
 
 * This illusion doesn't affect everyone similarly
@@ -38,14 +42,16 @@ there
 - We bring our own perception and previous associations into any image [fn:1]
 * When to use Visualisation?
 # should be in massive text
+#+ATTR_LATEX: \Huge
 - ALWAYS 
 
 * Running Example
 - Property Price Register
+  - Kinda a crappy dataset
+  - No cleaning or checking done by the authority 
+  - lots of craziness (1 apartment for 18.6mn)
 * Property Price Register
-- Kinda a crappy dataset
-- No cleaning or checking done by the authority 
-- lots of craziness (1 apartment for 18.6mn)
+
 * Cleaning the dataset
 - We used Google's geocoding service to get more details on each observation
 - I updated Shane Lynn's script and ran it on the data up till October 2018
@@ -58,7 +64,6 @@ there
 - there are many
 - in this section, I'd like to subvert them, in order to make you think
 * Line Graphs
-
 - Normally represent time
 - scatterplots don't (always) have the same assumptions
 - what is the deepest assumption?
@@ -103,22 +108,27 @@ median_price_by_day_reversed <-
 #+BEGIN_SRC R :session :results output graphics :file line1.png :exports results
 ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
 #+END_SRC
-
+#+attr_latex: :width 100px :height 100px
+#+attr_html: :width 100px :height 100px
 #+RESULTS:
 [[file:line1.png]]
 * Flipped Line Chart
+
 #+BEGIN_SRC R :session :results output graphics :file line2.png :exports results
 ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
 #+END_SRC
 
+#+attr_latex: :width 100px :height 100px
+#+attr_html: :width 100px :height 100px
 #+RESULTS:
 [[file:line2.png]]
 
 * Backwards Line Chart
-#+BEGIN_SRC R :session :results output graphics :exports results :file line3.png
-with(median_price_by_day_reversed, plot(x=1:nrow(median_price_by_day_reversed), y=price_reverse, type="l"))
-axis(side=1, at=1:nrow(median_price_by_day), labels=median_price_by_day_reversed$date_reverse)
+#+BEGIN_SRC R :session :results output graphics :file line3.png :exports results 
+ggplot(median_price_by_day_reversed, aes(x=1:nrow(median_price_by_day_reversed), y=price_reverse))+geom_line()
 #+END_SRC
+
+
 - This couldn't be done in ggplot
 - The only way to get this to work is to do violence to the intention
   of the tool
@@ -158,6 +168,48 @@ ggplot(price_count_negative,
 - We have a base level of assumptions that we bring to graphics (especially statistical graphics)
 - Most of these appear to have been formed by Descartes 
 - When these assumptions are subverted, expect problems
+* Simple Statistical Graphics
+- Graphs excel at showing relations between things
+- Consider the difference between quantiles of a variable, and a density plot
+- For example, the price of houses:
+#+begin_src R :session :colnames yes :rownames yes
+with(ppr_gc, quantile(price, seq(0, 1, .1))) %>% as.data.frame()
+#+end_src
+
+#+RESULTS:
+|      |         0 |
+|------+-----------|
+|   0% |      5079 |
+|  10% |     55000 |
+|  20% |     85000 |
+|  30% |    115000 |
+|  40% |    145000 |
+|  50% |    175000 |
+|  60% |    214000 |
+|  70% |    255505 |
+|  80% |    315000 |
+|  90% |    430000 |
+| 100% | 139165000 |
+* Density Plot
+  #+begin_src R :session :results output graphics :file dens1.png :exports results
+ggplot(ppr_gc, aes(x=price))+geom_density()
+  #+end_src
+
+  #+RESULTS:
+  [[file:dens1.png]]
+* Better Density Plot
+  #+begin_src R :session :results output graphics :exports results :file dens2.png
+  ggplot(ppr_gc, aes(x=log(price)))+geom_density()
+  #+end_src
+
+  #+RESULTS:
+  [[file:dens2.png]]
+* Transformations
+- Useful to get a better sense of the data
+- Have a bunch of assumptions (what's the log of -1)
+- Can be used to deceive very, very easily
+- Really really useful in everyday practice
+
 * Performative vs Presentation
 - Two types of graphs:
   - for yourself
