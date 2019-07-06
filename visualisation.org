@@ -1,4 +1,7 @@
-#+OPTIONS: tasks: nil
+#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.7.0
+#+PROPERTY: header-args  :results none
+#+PROPERTY: header-args:R :session *R*  :eval no-export :results none
+#+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+AUTHOR: Richie Morrisroe
 #+TITLE: Visualisation: Modelling the World
@@ -14,17 +17,19 @@
 there
 #+CAPTION: What do you see?
 #+NAME: fig:old_young
-[[./old_young.pdf][old_young]]
+[[./old_young.png]]
 * The importance of perspective
 - You can see one of two things in the previous image
 - Which of them can depend on what you expect to see
 - It can also depend on what your environment contains
 * Muller-Lyer Illusion
-- Which line is longer?
+#+CAPTION: Which line is longer?
+#+NAME: muller_lyer
+[[./muller_lyer.png]]
 
 * This illusion doesn't affect everyone similarly
 - Europeans and Americans are more susceptible
-= Africans are less susceptible
+- Africans are less susceptible
 - Possibility that due to presence of right angles in urban environments
 - appears to be a small difference between urban and rural dwellers
 * Who cares?
@@ -50,7 +55,6 @@ there
 - Lots of manual fixing required
 - the irish text definitely doesn't help
 * Assumptions of Statistical Graphics
-
 - there are many
 - in this section, I'd like to subvert them, in order to make you think
 * Line Graphs
@@ -59,7 +63,7 @@ there
 - scatterplots don't (always) have the same assumptions
 - what is the deepest assumption?
 * Median Property Price by Day, Ireland 2011-18
-#+BEGIN_SRC R :session  :results none
+#+BEGIN_SRC R :session  :results none :exports none 
 require(sp)
 require(rgdal)
 require(tidyverse)
@@ -69,8 +73,6 @@ ppr_gc_smaller <- select(ppr_gc, year, input_string, sale_date, price, ppr_count
 ppr_gc2 <- filter(ppr_gc_smaller, !is.na(latitude), !is.na(electoral_district))
 locs <- select(ppr_gc2, longitude, latitude)
 sp_ppr <- SpatialPointsDataFrame(locs, data=ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
-## pobal_locs <- select(ppr_plus_pobal, latitude, longitude)
-## sp_ppr_pobal <- SpatialPointsDataFrame(pobal_locs, data=ppr_plus_pobal, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 shp <- readOGR("~/Dropbox/PPR/electoral_divisions_gps.shp")
 dublin_counties <- c("Fingal", "Dn Laoghaire-Rathdown", "Dublin City", 
                      "South Dublin", "Kildare County", "Wicklow County")
@@ -83,7 +85,10 @@ mapdata <- fortify(subset)
 dubcity <- filter(ppr_gc2, geo_county %in% dublin_counties)
 dubcity_samp <- sample_frac(dubcity, size=0.3)
 #+END_SRC
-#+BEGIN_SRC R :session :results none
+
+
+
+#+BEGIN_SRC R :session :results none :exports none
 median_price_by_day <- ppr_gc2 %>% group_by(sale_date) %>%
     summarise(count=n(),
               median_price=median(price, na.rm=TRUE))
@@ -93,14 +98,16 @@ median_price_by_day_reversed <-
            price_reverse=rev(median_price))
 
 #+END_SRC
-#+BEGIN_SRC R :session :results output graphics :file line1.png
+
+
+#+BEGIN_SRC R :session :results output graphics :file line1.png :exports results
 ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
 #+END_SRC
 
 #+RESULTS:
 [[file:line1.png]]
 * Flipped Line Chart
-#+BEGIN_SRC R :session :results output graphics :file line2.png
+#+BEGIN_SRC R :session :results output graphics :file line2.png :exports results
 ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
 #+END_SRC
 
@@ -149,7 +156,7 @@ ggplot(price_count_negative,
 
 * What does this tell us?
 - We have a base level of assumptions that we bring to graphics (especially statistical graphics)
-- Most of these appear to have been formed by Descartes ;)
+- Most of these appear to have been formed by Descartes 
 - When these assumptions are subverted, expect problems
 * Performative vs Presentation
 - Two types of graphs:
