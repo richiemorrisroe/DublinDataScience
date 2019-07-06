@@ -1,0 +1,218 @@
+#+OPTIONS: tasks: nil
+#+OPTIONS: toc:nil
+#+AUTHOR: Richie Morrisroe
+#+TITLE: Visualisation: Modelling the World
+
+
+* What is Visualisation?
+- a tool for understanding the world
+- a way to communicate a particular perspective on data
+- an adjunct to thought
+* Why Visualisation?
+- The eye is really really good at finding patterns in pictures
+- in fact, it's so good that  it can find patterns that aren't even
+there
+#+CAPTION: What do you see?
+#+NAME: fig:old_young
+[[./old_young.pdf][old_young]]
+* The importance of perspective
+- You can see one of two things in the previous image
+- Which of them can depend on what you expect to see
+- It can also depend on what your environment contains
+* Muller-Lyer Illusion
+- Which line is longer?
+
+* This illusion doesn't affect everyone similarly
+- Europeans and Americans are more susceptible
+= Africans are less susceptible
+- Possibility that due to presence of right angles in urban environments
+- appears to be a small difference between urban and rural dwellers
+* Who cares?
+- Shows that how we interpret stimuli is not *tabula rasa*
+- When you gaze into the image, the image also gazes into you...
+- We bring our own perception and previous associations into any image [fn:1]
+* When to use Visualisation?
+# should be in massive text
+- ALWAYS 
+
+* Running Example
+- Property Price Register
+* Property Price Register
+- Kinda a crappy dataset
+- No cleaning or checking done by the authority 
+- lots of craziness (1 apartment for 18.6mn)
+* Cleaning the dataset
+- We used Google's geocoding service to get more details on each observation
+- I updated Shane Lynn's script and ran it on the data up till October 2018
+- I also typically break out properties sold for greater than 1mn, as
+  they are often multiple-unit sales (and there's little to no
+  automated way of figuring this out)
+- Lots of manual fixing required
+- the irish text definitely doesn't help
+* Assumptions of Statistical Graphics
+
+- there are many
+- in this section, I'd like to subvert them, in order to make you think
+* Line Graphs
+
+- Normally represent time
+- scatterplots don't (always) have the same assumptions
+- what is the deepest assumption?
+* Median Property Price by Day, Ireland 2011-18
+#+BEGIN_SRC R :session  :results none
+require(sp)
+require(rgdal)
+require(tidyverse)
+ppr_gc <- read_csv("~/Dropbox/PPR/ppr_geocoded_till_oct2018.csv")
+
+ppr_gc_smaller <- select(ppr_gc, year, input_string, sale_date, price, ppr_county, geo_county, description_of_property, 15:24) %>% filter(price<1e6)
+ppr_gc2 <- filter(ppr_gc_smaller, !is.na(latitude), !is.na(electoral_district))
+locs <- select(ppr_gc2, longitude, latitude)
+sp_ppr <- SpatialPointsDataFrame(locs, data=ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+## pobal_locs <- select(ppr_plus_pobal, latitude, longitude)
+## sp_ppr_pobal <- SpatialPointsDataFrame(pobal_locs, data=ppr_plus_pobal, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
+shp <- readOGR("~/Dropbox/PPR/electoral_divisions_gps.shp")
+dublin_counties <- c("Fingal", "Dn Laoghaire-Rathdown", "Dublin City", 
+                     "South Dublin", "Kildare County", "Wicklow County")
+dubcity <- "Dublin City"
+duball <- shp[as.character(shp@data$COUNTYNAME) %in% 
+              dublin_counties, ]
+dubcity <- shp[as.character(shp@data$COUNTYNAME)=="Dublin City",]
+mapdata <- fortify(subset)
+
+dubcity <- filter(ppr_gc2, geo_county %in% dublin_counties)
+dubcity_samp <- sample_frac(dubcity, size=0.3)
+#+END_SRC
+#+BEGIN_SRC R :session :results none
+median_price_by_day <- ppr_gc2 %>% group_by(sale_date) %>%
+    summarise(count=n(),
+              median_price=median(price, na.rm=TRUE))
+
+median_price_by_day_reversed <-
+    mutate(median_price_by_day, date_reverse=rev(sale_date),
+           price_reverse=rev(median_price))
+
+#+END_SRC
+#+BEGIN_SRC R :session :results output graphics :file line1.png
+ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
+#+END_SRC
+
+#+RESULTS:
+[[file:line1.png]]
+* Flipped Line Chart
+#+BEGIN_SRC R :session :results output graphics :file line2.png
+ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
+#+END_SRC
+
+#+RESULTS:
+[[file:line2.png]]
+
+* Backwards Line Chart
+#+BEGIN_SRC R :session :results output graphics :exports results :file line3.png
+with(median_price_by_day_reversed, plot(x=1:nrow(median_price_by_day_reversed), y=price_reverse, type="l"))
+axis(side=1, at=1:nrow(median_price_by_day), labels=median_price_by_day_reversed$date_reverse)
+#+END_SRC
+- This couldn't be done in ggplot
+- The only way to get this to work is to do violence to the intention
+  of the tool
+* Scatter plot
+- Also encodes a set of base assumptions
+- points nearer to each other in space are more related
+- more orientation issues
+* Standard Scatter
+#+BEGIN_SRC R :session :results output graphics :exports results :file scatter1.png
+ggplot(median_price_by_day,
+       aes(x=median_price, y=count))+geom_point()
+#+END_SRC
+
+#+RESULTS:
+[[file:scatter1.png]]
+* Flipped Scatter
+
+#+BEGIN_SRC R :session :results output graphics :exports results :file scatter2.png
+ggplot(median_price_by_day,
+       aes(x=median_price, y=count))+geom_point()+coord_flip()
+#+END_SRC
+
+#+RESULTS:
+[[file:scatter2.png]]
+
+#+BEGIN_SRC R :session :results output graphics :exports results :file scatter3.png
+price_count_negative <- select(median_price_by_day, median_price, count) %>%
+    mutate(price2=-1*median_price, count2=-1*count)
+ggplot(price_count_negative,
+       aes(x=price2, y=count2))+geom_point()
+#+END_SRC
+
+#+RESULTS:
+[[file:scatter3.png]]
+
+* What does this tell us?
+- We have a base level of assumptions that we bring to graphics (especially statistical graphics)
+- Most of these appear to have been formed by Descartes ;)
+- When these assumptions are subverted, expect problems
+* Performative vs Presentation
+- Two types of graphs:
+  - for yourself
+  - for other people  (and different audiences need different things)
+* Performative Graphics
+- These are used to help you understand a problem
+- typically created in an iterative fashion
+- often move from data transformation to visualisation and back again
+* How to visualise common types of data
+- scatterplot
+- line plot
+- reversed line plot (time moves from RTL)
+- box plot
+- reversed box plot
+* Spatial vs Temporal
+- line plots vs maps
+- time versus space
+- both provide insight into 
+- pick one, difficult to do both
+
+* Presentation Graphics
+
+* Different Audiences/story
+- To some extent, your job with presentation visualisations is to tell a story
+- hopefully, it will be nuanced, but that isn't a requirement [fn:2]
+- Often good to show smooths as opposed to raw data
+- raw data is often ugly
+- need for care here, as this should only be done where there is a
+  clear effect
+* Interactivity and Dashboards
+- Can show both time and space
+- for reporting, these are essential
+- Much more effort from a software-engineering perspective [fn:3]
+* Reporting
+- Some times you need to repeat yourself
+- Couple of ways of approaching this
+  - Dashboards
+  - Automated Reports
+* Dashboards
+- Lots of effort to set up correctly
+- typically need a bunch of ETL to get data into correct format
+- Low-maintenance once the original work is done
+- Much more useful for business users 
+* Automated Reports
+- Less effort to get working (especially with Sweave, knitr and org/pandoc)
+- A lot more effort to get working in a Python/SQL context
+- More maintenance over time (someone needs to update the report)
+* Principles of Reporting Visualisations
+- Time view essential
+- preferably forecasts, with results of previous forecasts
+- allows 
+- Simple, simple, simple
+- One clear message (key metric or whatever)
+- available material for those that want to dig deeper
+* Footnotes
+
+[fn:1] anything really, but we're talking about images here. 
+
+[fn:2] and in fact, it may be better to remove all nuance from the
+presentation and provide a longer document with all the failed
+approaches and hacking needed to actually reproduce your results
+
+[fn:3] for me, at least
+
+
