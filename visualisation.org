@@ -1,6 +1,6 @@
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.7.0
 #+PROPERTY: header-args 
-#+PROPERTY: header-args:R :session *R*  :eval no-export 
+#+PROPERTY: header-args:R :session *R*  :eval no-export :width 300 :height 300
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+AUTHOR: Richie Morrisroe
@@ -24,7 +24,7 @@ there
 - You can see one of two things in the previous image
 - Which of them can depend on what you expect to see
 - It can also depend on what your environment contains
-* Muller-Lyer Illusion
+* Muller-Lyer 
 #+CAPTION: Which line is longer?
 #+NAME: muller_lyer
 #+attr_latex: :width 100px :height 100px
@@ -43,7 +43,9 @@ there
 * When to use Visualisation?
 # should be in massive text
 #+ATTR_LATEX: \Huge
-- ALWAYS 
+#+begin_export latex
+\center {\Huge Always}
+#+end_export
 
 * Running Example
 - Property Price Register
@@ -51,13 +53,11 @@ there
   - No cleaning or checking done by the authority 
   - lots of craziness (1 apartment for 18.6mn)
 * Property Price Register
-
-* Cleaning the dataset
 - We used Google's geocoding service to get more details on each observation
-- I updated Shane Lynn's script and ran it on the data up till October 2018
-- I also typically break out properties sold for greater than 1mn, as
+- I updated [[https://www.shanelynn.ie/tag/ppr/][Shane Lynn's]] script and ran it on the data up till October 2018
+- I also typically break out properties sold for greater than 1e6, as
   they are often multiple-unit sales (and there's little to no
-  automated way of figuring this out)
+  automated way of figuring this out) [fn:4]
 - Lots of manual fixing required
 - the irish text definitely doesn't help
 * Assumptions of Statistical Graphics
@@ -74,8 +74,9 @@ require(rgdal)
 require(tidyverse)
 ppr_gc <- read_csv("~/Dropbox/PPR/ppr_geocoded_till_oct2018.csv")
 
-ppr_gc_smaller <- select(ppr_gc, year, input_string, sale_date, price, ppr_county, geo_county, description_of_property, 15:24) %>% filter(price<1e6)
-ppr_gc2 <- filter(ppr_gc_smaller, !is.na(latitude), !is.na(electoral_district))
+ppr_gc_smaller <- select(ppr_gc, year, input_string, sale_date, price, ppr_county, geo_county, description_of_property, 15:24)
+ppr_gc_less_than_1m <- filter(ppr_gc_smaller, price<1e6)
+ppr_gc2 <- filter(ppr_gc_less_than_1m, !is.na(latitude), !is.na(electoral_district))
 locs <- select(ppr_gc2, longitude, latitude)
 sp_ppr <- SpatialPointsDataFrame(locs, data=ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
 shp <- readOGR("~/Dropbox/PPR/electoral_divisions_gps.shp")
@@ -85,7 +86,6 @@ dubcity <- "Dublin City"
 duball <- shp[as.character(shp@data$COUNTYNAME) %in% 
               dublin_counties, ]
 dubcity <- shp[as.character(shp@data$COUNTYNAME)=="Dublin City",]
-mapdata <- fortify(subset)
 
 dubcity <- filter(ppr_gc2, geo_county %in% dublin_counties)
 dubcity_samp <- sample_frac(dubcity, size=0.3)
@@ -94,10 +94,15 @@ dubcity_samp <- sample_frac(dubcity, size=0.3)
 
 
 #+BEGIN_SRC R :session :results none :exports none
+ppr_gc3 <- ppr_gc2 %>% mutate(is_dublin=ifelse(ppr_county=="Dublin", "Yes", "No"))
 median_price_by_day <- ppr_gc2 %>% group_by(sale_date) %>%
     summarise(count=n(),
               median_price=median(price, na.rm=TRUE))
 
+median_price_by_day <- ppr_gc2 %>% mutate(is_dublin=ifelse(ppr_county=="Dublin", 1, 0)) %>%
+group_by(sale_date,is_dublin) %>%
+    summarise(count=n(),
+              median_price=median(price, na.rm=TRUE))
 median_price_by_day_reversed <-
     mutate(median_price_by_day, date_reverse=rev(sale_date),
            price_reverse=rev(median_price))
@@ -106,7 +111,7 @@ median_price_by_day_reversed <-
 
 
 #+BEGIN_SRC R :session :results output graphics :file line1.png :exports results
-ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
+regular_line <- ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
 #+END_SRC
 #+attr_latex: :width 100px :height 100px
 #+attr_html: :width 100px :height 100px
@@ -115,21 +120,44 @@ ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()
 * Flipped Line Chart
 
 #+BEGIN_SRC R :session :results output graphics :file line2.png :exports results
-ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
+flipped_line <- ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
+grid.arrange(regular_line+geom_smooth(), flipped_line+geom_smooth())
+
 #+END_SRC
 
-#+attr_latex: :width 100px :height 100px
+#+attr_latex: :width 200px :height 200px
 #+attr_html: :width 100px :height 100px
 #+RESULTS:
 [[file:line2.png]]
+* F-ing Line Chart
+
+  #+begin_src R :session :results output graphics :file line5.png
+  
+ggplot(median_price_by_day, aes(y=sale_date, x=median_price))+geom_line()  
+#+end_src
+#+attr_latex :width 150px :height 150px
+#+RESULTS:
+[[file:line5.png]]
+
+- Here, the violence is that we swap the axes in a fashion only a monster would
+* Abusing Standard Assumptions
+
+  #+begin_src R :session :results output graphics :file line4.png
+  ggplot(median_price_by_day, aes(y=sale_date, x=median_price))+geom_line()+geom_smooth()
+  #+end_src
+
+  #+RESULTS:
+  [[file:line4.png]]
 
 * Backwards Line Chart
 #+BEGIN_SRC R :session :results output graphics :file line3.png :exports results 
 ggplot(median_price_by_day_reversed, aes(x=1:nrow(median_price_by_day_reversed), y=price_reverse))+geom_line()
 #+END_SRC
 
+#+RESULTS:
+[[file:line3.png]]
 
-- This couldn't be done in ggplot
+
 - The only way to get this to work is to do violence to the intention
   of the tool
 * Scatter plot
@@ -153,6 +181,7 @@ ggplot(median_price_by_day,
 
 #+RESULTS:
 [[file:scatter2.png]]
+q[[file:scatter2.png]]w
 
 #+BEGIN_SRC R :session :results output graphics :exports results :file scatter3.png
 price_count_negative <- select(median_price_by_day, median_price, count) %>%
@@ -172,13 +201,11 @@ ggplot(price_count_negative,
 - Graphs excel at showing relations between things
 - Consider the difference between quantiles of a variable, and a density plot
 - For example, the price of houses:
-#+begin_src R :session :colnames yes :rownames yes
-with(ppr_gc, quantile(price, seq(0, 1, .1))) %>% as.data.frame()
+#+begin_src R :session :colnames no :rownames yes :exports results
+with(ppr_gc, quantile(price, seq(0, 1, .1))) %>% as.data.frame() 
 #+end_src
 
 #+RESULTS:
-|      |         0 |
-|------+-----------|
 |   0% |      5079 |
 |  10% |     55000 |
 |  20% |     85000 |
@@ -194,14 +221,15 @@ with(ppr_gc, quantile(price, seq(0, 1, .1))) %>% as.data.frame()
   #+begin_src R :session :results output graphics :file dens1.png :exports results
 ggplot(ppr_gc, aes(x=price))+geom_density()
   #+end_src
-
+  #+attr_latex :width 150px :height 150px
   #+RESULTS:
   [[file:dens1.png]]
 * Better Density Plot
   #+begin_src R :session :results output graphics :exports results :file dens2.png
   ggplot(ppr_gc, aes(x=log(price)))+geom_density()
   #+end_src
-
+  
+  #+attr_latex :width 150px :height 150px
   #+RESULTS:
   [[file:dens2.png]]
 * Transformations
@@ -209,7 +237,157 @@ ggplot(ppr_gc, aes(x=price))+geom_density()
 - Have a bunch of assumptions (what's the log of -1)
 - Can be used to deceive very, very easily
 - Really really useful in everyday practice
+* Getting the sense of things
+- Picking the right visualisation for the data is important
 
+#+begin_src R :session :results output graphics :file scatter_bad.png 
+ggplot(dubcity, aes(x=sale_date, y=price))+geom_point()
+#+end_src
+
+#+attr_latex: :width 200px :height 200px
+#+RESULTS:
+[[file:scatter_bad.png]]
+
+- is this a good plot?
+- does this depend on the number of points?
+* Sampling and Plotting
+
+#+begin_src R :session :results output graphics :file scatter_bad2.png 
+ggplot(dubcity_samp, aes(x=sale_date, y=price))+geom_point()
+#+end_src
+#+attr_latex :width 150px :height 150px
+#+RESULTS:
+[[file:scatter_bad2.png]]
+
+- Not really
+* Transformations Help 
+  #+begin_src R :session :results output graphics :file logscatter.png :exports results
+  ggplot(ppr_gc_smaller, aes(x=sale_date, y=log(price, 10)))+geom_point()
+  #+end_src
+  #+attr_latex :width 150px :height 150px
+  #+RESULTS:
+  [[file:logscatter.png]]
+
+- Note the log 10 base
+- Some of you may be able to convert from base 2.718, but I missed
+  that class in school
+- Still crap though
+* No data is an island
+
+- The first obvious thing is to split by county, right?
+#+begin_src R :session :results output graphics :file scat_county1.png
+ggplot(ppr_gc_smaller, aes(x=sale_date, y=log(price, 10)))+geom_point()+facet_wrap(~ppr_county)
+#+end_src
+
+#+attr_latex :width 150px :height 150px
+#+RESULTS:
+[[file:scat_county1.png]]
+- Oh look, it's lot of little boxes of crap :(
+* Summarisation
+- The obvious answer is summarisation
+#+begin_src R :session :exports both :results output graphics :file linecounty1.png
+county_daily <- ppr_gc2 %>% group_by(sale_date, ppr_county, region) %>%
+  summarise(count=n(), min_price=min(price),
+            median_price=median(price),
+            max_price=max(price)) %>%
+  mutate(min_to_median=min_price/median_price,
+         max_to_median=max_price/median_price,
+         max_to_min=max_price/min_price)
+ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_line()
+#+end_src
+#+attr_latex :width 150px :height 150px
+#+RESULTS:
+[[file:linecounty1.png]]
+
+#+ATTR_LATEX height: 200px width:150px
+#+RESULTS:
+[[file:linecounty1.png]]
+* Reducing Alpha kinda works...
+  #+begin_src R :session :results output graphics :file linecounty2.png :exports results
+  ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_line(alpha=0.3)
+  #+end_src
+
+  #+RESULTS:
+  [[file:linecounty2.png]]
+
+- But really just washes the whole thing out
+* A redundant faceting variable
+- We just group by a higher level variable
+#+begin_src R :session :results output graphics :file linecounty3.png :exports results
+ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_line()+facet_wrap(~region)
+#+end_src
+
+#+RESULTS:
+[[file:linecounty3.png]]
+
+- Much clearer :)
+* WTF?
+- This is one of the major advantages of visualisation:
+  - it helps to (dis)confirm your assumptions
+  - given that we have too many lines in the various groupings,we know
+    that somethng has gone horribly wrong
+  - in this case, it's a mismatch between two different types of data
+* Iterating over data and visuals :noexport:
+#+begin_src R :session :colnames yes
+# this is an S4 object with geographical data 
+shp <- readOGR("~/Dropbox/PPR/electoral_divisions_gps.shp") 
+#the data slot contains a dataframe - countyname is the LEO's
+with(shp@data, table(COUNTYNAME)) %>% as.data.frame() %>% arrange(desc(Freq)) %>% head(10)
+#+end_src
+
+#+RESULTS:
+| COUNTYNAME      | Freq |
+|-----------------+------|
+| Cork County     |  324 |
+| Galway County   |  214 |
+| Kerry County    |  164 |
+| Dublin City     |  162 |
+| Mayo County     |  152 |
+| Clare County    |  151 |
+| Donegal County  |  149 |
+| Limerick County |  135 |
+| Wexford County  |  124 |
+| Kilkenny County |  113 |
+- These are the local electoral authorities
+- These are from the geocoded points, so they should be somewhat better
+- the PPR data is sometimes crazy wrong [fn:5]
+
+
+#+begin_src R :session :results none :exports code
+#NUTS3
+county_region_map <- shp@data[,"COUNTYNAME", "NUTS3NAME"]
+ppr_gc_county_fix <- ppr_gc2 %>%
+  mutate(COUNTYNAME=ifelse(length(geo_county)==1, paste(geo_county, "County", sep=" "), geo_county))
+  
+#+end_src
+* Distributions (i.e. boxplots)
+  #+begin_src R :session :results output graphics :file boxplot1.png :exports both
+  ggplot(ppr_gc2, aes(x=as.factor(year), y=price))+geom_boxplot()
+  #+end_src
+  #+attr_latex :width 150px :height 150px
+  #+RESULTS:
+  [[file:boxplot1.png]]
+* Faceting, redux
+  #+begin_src R :session :results output graphics :file boxplot2.png :exports results 
+    ggplot(ppr_gc2, aes(x=as.factor(year), y=price))+geom_boxplot()+facet_wrap(~region)
+  #+end_src
+  #+attr_latex :width 150px :height 150px
+  #+RESULTS:
+  [[file:boxplot2.png]]
+
+- This actually works (for me, at least)
+- can you explain this to a sales-person?
+
+  
+
+* Distributions over Time, Redux
+  #+begin_src R :session :results output graphics :file density_year.png :exports results :width 400 :height 400 :center yes
+  ggplot(ppr_gc2, aes(x=log(price, 10), fill=region))+geom_density(alpha=0.3)+facet_wrap(~year)+xlab("log10_price")+theme(axis.text.x=element_text(angle=-45))
+  #+end_src
+  #+RESULTS:
+  [[file:density_year.png]]
+- This is much, much better
+- I definitely don't think I'd try to explain it to a business/sales person
 * Performative vs Presentation
 - Two types of graphs:
   - for yourself
@@ -217,12 +395,12 @@ ggplot(ppr_gc, aes(x=price))+geom_density()
 * Performative Graphics
 - These are used to help you understand a problem
 - typically created in an iterative fashion
-- often move from data transformation to visualisation and back again
+- often move from data transformation to visualisation and back agai
 * How to visualise common types of data
 - scatterplot
 - line plot
 - reversed line plot (time moves from RTL)
-- box plot
+- box plot 
 - reversed box plot
 * Spatial vs Temporal
 - line plots vs maps
@@ -265,6 +443,10 @@ ggplot(ppr_gc, aes(x=price))+geom_density()
 - One clear message (key metric or whatever)
 - available material for those that want to dig deeper
 * Footnotes
+
+[fn:5] one wonders if that's deliberate 
+
+[fn:4] please someone in the audience suggest a better idea 
 
 [fn:1] anything really, but we're talking about images here. 
 
