@@ -1,6 +1,6 @@
 #+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.7.0
 #+PROPERTY: header-args 
-#+PROPERTY: header-args:R :session *R*  :eval no-export :width 300 :height 300
+#+PROPERTY: header-args:R :session *R*  :eval no-export :width 200 :height 200
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+AUTHOR: Richie Morrisroe
@@ -261,12 +261,12 @@ ggplot(dubcity_samp, aes(x=sale_date, y=price))+geom_point()
 
 - Not really
 * Transformations Help 
-  #+begin_src R :session :results output graphics :file logscatter.png :exports results
+  #+begin_src R :session :results output graphics :file logscatter.pdf :exports results :width 200 :height 200
   ggplot(ppr_gc_smaller, aes(x=sale_date, y=log(price, 10)))+geom_point()
   #+end_src
-  #+attr_latex :width 150px :height 150px
-  #+RESULTS:
-  [[file:logscatter.png]]
+
+    #+RESULTS:
+    [[file:logscatter.pdf]]
 
 - Note the log 10 base
 - Some of you may be able to convert from base 2.718, but I missed
