@@ -368,12 +368,11 @@ ppr_gc_county_fix <- ppr_gc2 %>%
   #+RESULTS:
   [[file:boxplot1.png]]
 * Faceting, redux
-  #+begin_src R :session :results output graphics :file boxplot2.png :exports results 
+  #+begin_src R :session :results output graphics :file boxplot2.png :exports results  :width 300 :height 300
     ggplot(ppr_gc2, aes(x=as.factor(year), y=price))+geom_boxplot()+facet_wrap(~region)
   #+end_src
-  #+attr_latex :width 150px :height 150px
-  #+RESULTS:
-  [[file:boxplot2.png]]
+    #+RESULTS:
+    [[file:boxplot2.png]]
 
 - This actually works (for me, at least)
 - can you explain this to a sales-person?
@@ -388,6 +387,42 @@ ppr_gc_county_fix <- ppr_gc2 %>%
   [[file:density_year.png]]
 - This is much, much better
 - I definitely don't think I'd try to explain it to a business/sales person
+* Spatial vs Temporal
+- line plots vs maps
+- time versus space
+- both provide insight into 
+- pick one, difficult to do both
+* Line plots ignore space, maps ignore time
+#+BEGIN_SRC R :exports none :results none
+require(sf)
+require(rgeos)
+tenure <- read_csv("~/Dropbox/PPR/housing_tenure.csv") %>% normalise_names()
+names(tenure) <- gsub("^_", "perc_", x=names(tenure))
+
+ppr_tenure_m <- merge(ppr_gc, tenure, by.x="small_area", by.y="geog_id", all.x=TRUE)
+ppr_tenure_less_1m <- filter(ppr_tenure_m, price<=1e6)
+ppr_tenure_more_1m <- filter(ppr_tenure_m, price>1e6)
+elec_price <- ppr_tenure_less_1m %>% group_by(electoral_district, electoral_district_id, year) %>% summarise(med_price=median(price), count=n())
+elec_m <- merge(dub_counties, elec_price, by.x="CSOED", by.y="electoral_district_id", duplicateGeoms=TRUE)
+# elec_m_duball <- merge(subset, elec_price, by.x="CSOED", by.y="electoral_district_id", duplicateGeoms=TRUE)
+
+elec_m_sf <- st_as_sf(elec_m)
+elec_m_tenure <- merge(elec_m_sf, tenure, by.x="CSOED", by.y="ed_ward_id")
+#this took more time than I expected. 
+require(sf)
+subset_sf <- st_as_sf(dub_counties)
+subset_sf2 <- mutate(subset_sf, PROP_UNOCC=UNOCC2011/HS2011, PROP_MALE=MALE2011/TOTAL2011, PROP_FEMALE=FEMALE2011/TOTAL2011, DENSITY=TOTAL2011/LAND_AREA, PEOPLE_PER_HS=TOTAL2011/HS2011)
+#+END_SRC
+#+BEGIN_SRC R :session :results output graphics :file map1.png :exports results 
+plot(subset_sf2["PROP_UNOCC"])
+#+END_SRC
+
+#+RESULTS:
+[[file:map1.png]]
+- There's a real problem of scale here, in that Dublin City is both
+  responsible for much of th population, but is invisible
+- 
+
 * Performative vs Presentation
 - Two types of graphs:
   - for yourself
@@ -396,17 +431,13 @@ ppr_gc_county_fix <- ppr_gc2 %>%
 - These are used to help you understand a problem
 - typically created in an iterative fashion
 - often move from data transformation to visualisation and back agai
-* How to visualise common types of data
+* How to visualise common types of data :noexport:
 - scatterplot
 - line plot
 - reversed line plot (time moves from RTL)
 - box plot 
 - reversed box plot
-* Spatial vs Temporal
-- line plots vs maps
-- time versus space
-- both provide insight into 
-- pick one, difficult to do both
+
 
 * Presentation Graphics
 
