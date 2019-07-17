@@ -1,6 +1,11 @@
-#+REVEAL_ROOT: https://cdn.jsdelivr.net/npm/reveal.js@3.7.0
-#+PROPERTY: header-args 
-#+PROPERTY: header-args:R :session *R*  :eval no-export 
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation]
+#+BEAMER_THEME: Berkeley
+#+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+#+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
+#+BIND: org-latex-image-default-width 0.7\linewidth
+#+BIND: org-latex-image-default-height 0.7\linewidth
+#+PROPERTY: header-args:R :session *R*  :eval no-export :height 360 :width 360
 #+OPTIONS: tasks:nil
 #+OPTIONS: toc:nil
 #+AUTHOR: Richie Morrisroe
@@ -82,7 +87,7 @@ require(tidyverse)
 ppr_gc <- read_csv("~/Dropbox/PPR/ppr_geocoded_till_oct2018.csv")
 
 ppr_gc_smaller <- select(ppr_gc, year, input_string, sale_date, price, ppr_county, geo_county, description_of_property, 15:24)
-ppr_gc_less_than_1m <- filter(ppr_gc_smaller, price<1e6)
+ppr_gc_less_than_1m <- filter(ppr_gc_smaller, price<2e6)
 ppr_gc2 <- filter(ppr_gc_less_than_1m, !is.na(latitude), !is.na(electoral_district))
 locs <- select(ppr_gc2, longitude, latitude)
 sp_ppr <- SpatialPointsDataFrame(locs, data=ppr_gc2, proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"))
@@ -128,10 +133,11 @@ print(regular_line)
 #+BEGIN_SRC R :session :results output graphics :file line2.png :exports results
 require(gridExtra)
 flipped_line <- ggplot(median_price_by_day, aes(x=sale_date, y=median_price))+geom_line()+coord_flip()
-grid.arrange(regular_line+geom_smooth(), flipped_line+geom_smooth())
+print(flipped_line+geom_smooth())
 
 #+END_SRC
 
+#+ATTR_LATEX: :width .9\linewidth :height .9\textheight
 #+RESULTS:
 [[file:line2.png]]
 * F-ing Line Chart
@@ -153,7 +159,7 @@ ggplot(median_price_by_day, aes(y=sale_date, x=median_price))+geom_line()
   #+RESULTS:
   [[file:line4.png]]
 
-* Backwards Line Chart
+* Backwards Line Chart :noexport:
 #+BEGIN_SRC R :session :results output graphics :file line3.png :exports results  
 ggplot(median_price_by_day_reversed, aes(x=1:nrow(median_price_by_day_reversed), y=price_reverse))+geom_line()
 #+END_SRC
@@ -198,7 +204,8 @@ ggplot(price_count_negative,
 #+END_SRC
 
 #+RESULTS:
-h[[file:scatter3.png]]
+[[file:scatter3.png]]
+
 
 * What does this tell us?
 - We have a base level of assumptions that we bring to graphics (especially statistical graphics)
@@ -232,10 +239,9 @@ ggplot(ppr_gc, aes(x=price))+geom_density()
   #+RESULTS:
   [[file:dens1.png]]
 * Better Density Plot
-  #+begin_src R :session :results output graphics :exports results :file dens2.png   
-
-ggplot(ppr_gc, aes(x=log(price)))+geom_density()
-  #+end_src
+#+begin_src R :session :results output graphics :exports results :file dens2.png   
+ggplot(ppr_gc, aes(x=log(price, 10)))+geom_density()
+#+end_src
   
 
   #+RESULTS:
@@ -249,8 +255,7 @@ ggplot(ppr_gc, aes(x=log(price)))+geom_density()
 - Picking the right visualisation for the data is important
 
 #+begin_src R :session :results output graphics :file scatter_bad.png  :exports results
-
-ggplot(dubcity, aes(x=sale_date, y=price))+geom_point()
+ggplot(ppr_gc, aes(x=sale_date, y=price))+geom_point()
 #+end_src
 
 
@@ -259,10 +264,25 @@ ggplot(dubcity, aes(x=sale_date, y=price))+geom_point()
 
 - is this a good plot?
 - does this depend on the number of points?
-* Sampling and Plotting
+* Cleaning the Data
+- Let's say we remove all properties with prices greater than 2mn
+#+begin_src R :session :results output graphics :file scatter_bad2.png  :exports results
+ggplot(ppr_gc2, aes(x=sale_date, y=price))+geom_point()+scale_y_continuous(labels=scales::dollar_format(prefix="€" ))
+#+end_src
 
+#+RESULTS:
+[[file:scatter_bad2.png]]
+* More Data Cleaning
+#+BEGIN_SRC R :session :results output graphics :file scatter_bad3.png :exports results
+ggplot(ppr_gc2, aes(x=sale_date, y=price))+geom_point()+coord_cartesian(ylim=c(0, 1e6))+scale_y_continuous(labels=scales::dollar_format(prefix="€" ))
+#+END_SRC
+
+#+RESULTS:
+[[file:scatter_bad3.png]]
+- Better or worse?
+* Sampling and Plotting
 #+begin_src R :session :results output graphics :file scatter_bad2.png :exports results
-ggplot(dubcity_samp, aes(x=sale_date, y=price))+geom_point()
+ggplot(dubcity_samp, aes(x=sale_date, y=price))+geom_point()+scale_y_continuous(labels=scales::dollar_format(prefix="€" ))
 #+end_src
 
 #+RESULTS:
@@ -470,7 +490,7 @@ filter(elec_m_sf, COUNTYNAME=="Dublin City", year>=2016) %>% ggplot(aes(fill=cou
 #+END_SRC
 
 #+RESULTS:
-[[file:map6.png]] 
+[[file:map6.png]]
 - Just doesn't work
 * Lines for Time
 
@@ -540,6 +560,12 @@ ggplot(elec_m_sf, aes(x=year, y=count, colour=electoral_district))+geom_line()+t
 - Iterative process, even bad graphs can teach you something
 - Secondarily, it's a tool for communicating with others
 - When using visualisations with others, keep it simple
+* More Info
+- My property article [[http://richiemorrisroe.github.io/property/PPR.html][here]]
+- My repository for [[https://github.com/richiemorrisroe/DublinDataScience][this talk]]
+- My crazy long notes file with [[https://github.com/richiemorrisroe/PPR][most of my analyses]]
+- the data [[https://propertypriceregister.ie/website/npsra/pprweb.nsf/PPR?OpenForm][itself]]
+
 * Reporting :noexport:
 - Some times you need to repeat yourself
 - Couple of ways of approaching this
@@ -561,6 +587,15 @@ ggplot(elec_m_sf, aes(x=year, y=count, colour=electoral_district))+geom_line()+t
 - Simple, simple, simple
 - One clear message (key metric or whatever)
 - available material for those that want to dig deeper
+
+* sessionInfo
+#+BEGIN_SRC R :session :exports results :results verbatim
+print(sessionInfo())
+#+END_SRC
+
+#+RESULTS:
+
+  
 * Footnotes
 
 [fn:5] one wonders if that's deliberate 
