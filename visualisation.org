@@ -314,7 +314,7 @@ ggplot(ppr_gc_smaller, aes(x=sale_date, y=log(price, 10)))+geom_point()+facet_wr
 - Oh look, it's lot of little boxes of crap :(
 * Summarisation
 - The obvious answer is summarisation
-#+begin_src R :session :exports both :results output graphics :file linecounty1.png 
+#+begin_src R :session :exports results :results output graphics :file linecounty1.png 
 county_daily <- ppr_gc2 %>% group_by(sale_date, ppr_county, region) %>%
   summarise(count=n(), min_price=min(price),
             median_price=median(price),
