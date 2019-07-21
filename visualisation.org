@@ -46,18 +46,16 @@ there
 - Africans are less susceptible
 - Possibility that it is due to presence of right angles in urban environments
 - appears to be a small difference between urban and rural dwellers
+- very very relevant to boxplots (how to lie with boxplots, I guess)
 * Who cares?
 - Shows that how we interpret stimuli is not *tabula rasa*
 - When you gaze into the image, the image also gazes into you...
 - We bring our own perception and previous associations into any image [fn:1]
 * When to use Visualisation?
-# should be in massive text
-#+BEGIN_LaTeX
 \begin{center}
  {\Huge Always}  
 \end{center}
 
-#+END_LaTeX
 
 * Running Example
 - Property Price Register
@@ -280,7 +278,7 @@ ggplot(ppr_gc2, aes(x=sale_date, y=price))+geom_point()+coord_cartesian(ylim=c(0
 #+RESULTS:
 [[file:scatter_bad3.png]]
 - Better or worse?
-* Sampling and Plotting
+* Sampling and Plotting :noexport:
 #+begin_src R :session :results output graphics :file scatter_bad2.png :exports results
 ggplot(dubcity_samp, aes(x=sale_date, y=price))+geom_point()+scale_y_continuous(labels=scales::dollar_format(prefix="€" ))
 #+end_src
@@ -342,7 +340,7 @@ ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_l
 * A redundant faceting variable
 - We just group by a higher level variable
 #+begin_src R :session :results output graphics :file linecounty3.png :exports results
-ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_line()+facet_wrap(~region)
+ggplot(county_daily, aes(x=sale_date, y=median_price, colour=ppr_county))+geom_line()+facet_wrap(~region)+theme(legend.position="none")
 #+end_src
 
 #+RESULTS:
@@ -397,7 +395,7 @@ ppr_gc_county_fix <- ppr_gc2 %>%
   [[file:boxplot1-0.png]]
 * Faceting, redux
   #+begin_src R :session :results output graphics :file boxplot2.png :exports results  
-ggplot(ppr_gc2, aes(x=as.factor(year), y=price))+geom_boxplot()+facet_wrap(~region)
+ggplot(ppr_gc2, aes(x=as.factor(year), y=price))+geom_boxplot()+facet_wrap(~region)+theme(axis.text.x=element_text(angle=-90, hjust=1))
   #+end_src
     #+RESULTS:
     [[file:boxplot2.png]]
@@ -449,7 +447,7 @@ ggplot(elec_m_sf, aes(fill=med_price))+geom_sf()
 #+RESULTS:
 [[file:map1.png]]
 - There's a real problem of scale here, in that Dublin City is both
-  responsible for much of th population, but is invisible
+  responsible for much of the population, but is invisible
 -
 * Dirty Oul Town
 #+BEGIN_SRC R :session :results output graphics :exports results :file map2.png
@@ -468,9 +466,12 @@ ggplot(elec_m_sf, aes(fill=count))+geom_sf()
 - Outliers make the map useless
 
 * Dublin City (again)
-#+BEGIN_SRC R :session :results output graphics :exports results map4.png
-filter(elec_m_sf, COUNTYNAME=="Dublin City") %>% ggplot(elec_m_sf, aes(x=count))+geom_sf()
+#+BEGIN_SRC R :session :results output graphics :exports results :file map4.png 
+filter(elec_m_sf, COUNTYNAME=="Dublin City") %>% ggplot( aes(fill=count))+geom_sf()
 #+END_SRC
+
+#+RESULTS:
+[[file:map4.png]]
 
 * Density Plots to help maps
 #+BEGIN_SRC R :session :results output graphics :exports results :file dens_both.png
@@ -485,13 +486,14 @@ print(grid.arrange(duball_p, dubcity_p))
 
 - A tiny proportion of electoral districts drive the uselessness of the maps
 * Maps over Time
-#+BEGIN_SRC R :session :results output graphics :file map6.png :exports results
-filter(elec_m_sf, COUNTYNAME=="Dublin City", year>=2016) %>% ggplot(aes(fill=count))+geom_sf()+facet_wrap(~year)
+#+BEGIN_SRC R :session :results output graphics :file map9.png :exports results
+filter(elec_m_sf, COUNTYNAME=="Dublin City", year>=2014, count<250) %>% ggplot(aes(fill=count))+geom_sf()+facet_wrap(~year)+theme(axis.text.x=element_text(angle=-90))
 #+END_SRC
 
 #+RESULTS:
-[[file:map6.png]]
+[[file:map9.png]]
 - Just doesn't work
+- Even when I account for the outliers, it still doesn't work. 
 * Lines for Time
 
 #+BEGIN_SRC R :session :results output graphics :exports results :file line_time.png
