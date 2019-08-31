@@ -428,7 +428,7 @@ names(tenure) <- gsub("^_", "perc_", x=names(tenure))
 ppr_tenure_m <- merge(ppr_gc, tenure, by.x="small_area", by.y="geog_id", all.x=TRUE)
 ppr_tenure_less_1m <- filter(ppr_tenure_m, price<=1e6)
 ppr_tenure_more_1m <- filter(ppr_tenure_m, price>1e6)
-elec_price <- ppr_tenure_less_1m %>% group_by(electoral_district, electoral_district_id, year) %>% summarise(med_price=median(price), count=n())
+elec_price <- ppr_tenure_less_1m %>% group_by(electoral_district, electoral_district_id, year) %>% summarise(med_price=median(price), count=n(), max_price=max(price), min_price=min(price))
 elec_m <- merge(dub_counties, elec_price, by.x="CSOED", by.y="electoral_district_id", duplicateGeoms=TRUE)
 # elec_m_duball <- merge(subset, elec_price, by.x="CSOED", by.y="electoral_district_id", duplicateGeoms=TRUE)
 
