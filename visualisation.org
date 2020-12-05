@@ -1,3 +1,4 @@
+#+SETUPFILE: ~/Dropbox/org-minimal-html-theme/org-minimal-theme.setup
 #+LaTeX_CLASS: beamer
 #+LaTeX_CLASS_OPTIONS: [presentation]
 #+BEAMER_THEME: Berkeley
@@ -613,3 +614,68 @@ approaches and hacking needed to actually reproduce your results
 [fn:3] for me, at least
 
 
+* More Stuff :noexport:
+
+  #+begin_src R :session :results none :eval no
+stan_lm1  <- stan_lm(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06,
+                     data=ppr_train_sample_lprice, prior=R2(0.5))
+plot(stanlm1)
+plot(stan_lm1)
+plot(stan_lm1, plotfun="dens")
+ls(pattern="test")
+dim(ppr_test_samp)
+postpreds <- posterior_predict(stan_lm1, newdata=ppr_test_samp)
+dim(na.omit(ppr_test_samp))
+dim((ppr_test_samp))
+ls(pattern="ppr_test")
+dim((ppr_test_samp2))
+
+dim((ppr_test_samp3))
+names((ppr_test_samp3))
+postpreds <- posterior_predict(stan_lm1, newdata=ppr_test_samp2)
+dim(postpreds)
+post_preds_samp <- postpreds[,sample(1:ncol(postpreds), size=floor(ncols(postpreds)/10))]
+post_preds_samp <- postpreds[,sample(1:ncol(postpreds), size=floor(ncol(postpreds)/10))]
+dim(post_preds_samp)
+pp_samp_long <- gather(post_preds_samp, key="rep", value="estimate")
+pp_samp_long <- gather(as.data.frame(post_preds_samp), key="rep", value="estimate")
+ggplot(pp_samp_long, aes(x=estimate, group=rep))+geom_density()
+mean_pred_lm <- colMeans(postpreds)
+length(mean_pred_lm)
+ppr_test_samp3$bayes_lm_pred <- mean_pred_lm
+ggplot(ppr_test_samp, aes(x=log_price, y=mean_pred_lm))+geom_point()
+ggplot(ppr_test_samp, aes(x=price, y=mean_pred_lm^10))+geom_point()
+ggplot(ppr_test_samp3, aes(x=price, y=mean_pred_lm^10))+geom_point()
+ggplot(ppr_test_samp3, aes(x=price, y=mean_pred_lm^10))+geom_point()+geom_smooth()
+ggplot(ppr_test_samp3, aes(x=(mean_pred_lm^10-price)^2))+geom_density()
+require(broom)
+augment(stan_lm1)
+stan_lm1_augment <- augment(stan_lm1)
+names(stan_lm1_augment)
+ggplot(stan_lm1_augment, aes(x=price, y=.resid))+geom_point()
+ggplot(stan_lm1_augment, aes(x=log_price, y=.resid))+geom_point()
+stan_lm1_year  <- stan_lm(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+year, data=ppr_train_sample_lprice, prior=R2(0.5))
+parallel::detectCores()
+options(mc.cores = parallel::detectCores()-1)
+stan_lm1_year  <- stan_lm(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+year, data=ppr_train_sample_lprice, prior=R2(0.5))
+plot(stan_lm1_year)
+plot(stan_lm1_year, plotfun="dens")
+exp(-40)
+-40^10
+names(ppr_train_sample)
+stan_lm1_year_gc  <- stan_lm(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+year+geo_county, data=ppr_train_sample_lprice, prior=R2(0.5))
+plot(stan_lm1_year_gc, plotfun="dens")
+plot(stan_lm1_year_gc, plotfun="intervals")
+ls(pattern="stan")
+plot(stanlmer_grouped_region_year)
+plot(stanlmer_grouped_region_no_pop)
+plot(stanlmer_test_real)
+str(postpreds)
+names(ppr_test_samp3)
+ggplot(ppr_test_samp3, aes(x=prediction, y=resid))+geom_point()
+ggplot(ppr_test_samp3, aes(x=prediction, y=std_res))+geom_point()
+stan_lmer_full  <- stan_lm(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+(1|year)+(electoral_district|geo_county), data=ppr_train_sample_lprice)
+stan_lmer_full  <- stan_lmer(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+(1|year)+(electoral_district|geo_county), data=ppr_train_sample_lprice)
+stan_lmer_full  <- stan_lmer(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+(1|year)+(electoral_district|geo_county), data=ppr_train_sample_lprice)
+  stan_lmer_full  <- stan_lmer(log_price~POPCHG11+AGEDEP11+LONEPA11+EDLOW_11+EDHIGH11+HLPROF11+LSKILL11+UNEMPM11+UNEMPF11+PEROOM11+LARENT11+PRRENT11+OHOUSE11+POPCHG06+AGEDEP06+LONEPA06+EDLOW_06+EDHIGH06+HLPROF06+LSKILL06+UNEMPM06+UNEMPF06+PEROOM06+LARENT06+PRRENT06+OHOUSE06+(1|year)+(electoral_district|geo_county), data=ppr_train_sample_lprice)
+  #+end_src
